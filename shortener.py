@@ -76,9 +76,16 @@ def login():
         else:
             session.permanent = True
             session['logged_in'] = True
-            flash('Logined in')
+            flash("You're logged in")
             return redirect(url_for('shorten'))
     return render_template('login.html', error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.pop('logged_in',None)
+    flash("You're logged out")
+    return redirect(url_for('shorten'))
 
 ## shortner
 @app.route("/")
