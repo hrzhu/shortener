@@ -30,13 +30,14 @@ class RegexConverter(BaseConverter):
 
 
 ## app settings
-app = Flask('Shortner')
+app = Flask(__name__)
 app.debug = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shortener.db'
 app.secret_key = 'DEV'
 app.url_map.converters['regex'] = RegexConverter
-app.server_name = 'example.com'
+app.config['SERVER_NAME'] = 'dev.app:5000'
 db = SQLAlchemy(app)
+app.config.from_object(__name__)
 
 
 ## db stuffs
@@ -81,20 +82,22 @@ def login():
     return render_template('login.html', error=error)
 
 
-@app.route("/logout")
+@app.route('/logout')
 def logout():
-    session.pop('logged_in',None)
+    session.pop('logged_in', None)
     flash("You're logged out")
     return redirect(url_for('shorten'))
 
+
 ## shortner
-@app.route("/")
+@app.route('/', subdomain='short')
 def shorten():
     url = None
     if session.get('url'):
         url = session['url']
         session.pop('url', None)
-    return render_template("shortener.html", domain=app.server_name, url=url)
+    return render_template("shortener.html", domain=app.config['SERVER_NAME'],
+                           url=url)
 
 
 @app.route('/<regex("[\w]{3}$"):url>')
@@ -106,7 +109,7 @@ def redirect_url(url):
         abort(404)
 
 
-@app.route("/shorten", methods=['POST'])
+@app.route('/shorten', methods=['POST'])
 @login_required
 def shorten_url():
     if request.form['text']:
