@@ -2,6 +2,7 @@
 
 import random
 import re
+from functools import wraps
 from string import digits, letters
 from flask import Flask, redirect, flash, url_for, render_template, request, \
     session, abort
@@ -27,14 +28,18 @@ class RegexConverter(BaseConverter):
         super(RegexConverter, self).__init__(url_map)
         self.regex = items[0]
 
+
+## app settings
 app = Flask('Shortner')
 app.debug = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shortener.db'
 app.secret_key = 'DEV'
 app.url_map.converters['regex'] = RegexConverter
+app.server_name = 'example.com'
 db = SQLAlchemy(app)
 
 
+## db stuffs
 class Url(db.Model):
     __tablename__ = 'Urls'
     long_url = db.Column(db.String, nullable=False)
@@ -46,13 +51,43 @@ class Url(db.Model):
         self.short_url_id = short_url_id
 
 
+## user stuffs
+USER = 'DEV'
+PASS = 'DEV'
+
+
+def login_required(fn):
+    @wraps(fn)
+    def inner_fn(*args, **kwargs):
+        if not session.get('logged_in'):
+            return abort(401)
+        return fn(*args, **kwargs)
+    return inner_fn
+
+
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        if request.form['username'] != USER:
+            error = 'Invalid username!'
+        elif request.form['password'] != PASS:
+            error = 'Invalid password!'
+        else:
+            session.permanent = True
+            session['logged_in'] = True
+            flash('Logined in')
+            return redirect(url_for('shorten'))
+    return render_template('login.html', error=error)
+
+## shortner
 @app.route("/")
 def shorten():
     url = None
     if session.get('url'):
         url = session['url']
         session.pop('url', None)
-    return render_template("shortener.html", url=url)
+    return render_template("shortener.html", domain=app.server_name, url=url)
 
 
 @app.route('/<regex("[\w]{3}$"):url>')
@@ -61,9 +96,11 @@ def redirect_url(url):
     if long_url:
         return redirect(long_url.long_url)
     else:
-        return abort(404)
+        abort(404)
+
 
 @app.route("/shorten", methods=['POST'])
+@login_required
 def shorten_url():
     if request.form['text']:
         long_url = request.form['text']
@@ -75,6 +112,7 @@ def shorten_url():
         db.session.commit()
         flash("Url is sucessfully shortened to")
     return redirect(url_for('shorten'))
+
 
 if __name__ == '__main__':
     db.create_all(app=app)

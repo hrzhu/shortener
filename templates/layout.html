@@ -15,7 +15,7 @@
   {% for message in get_flashed_messages() %}
     <div class=flash>{{ message }}
     {% if url %}
-    <a href="http://hrzhu.me/{{ url }}">http://hrzhu.me/{{ url }}</a>
+    <a href="http://{{ domain }}/{{ url }}">http://{{ domain }}/{{ url }}</a>
     {% endif %}
     </div>
   {% endfor %}
