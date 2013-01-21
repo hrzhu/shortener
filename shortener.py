@@ -44,11 +44,13 @@ app.config.from_object(__name__)
 class Url(db.Model):
     __tablename__ = 'Urls'
     long_url = db.Column(db.String, nullable=False)
+    short_url = db.Column(db.String, nullable=False)
     short_url_id = db.Column(db.Integer, nullable=False,
                              primary_key=True, autoincrement=False)
 
-    def __init__(self, long_url, short_url_id):
+    def __init__(self, long_url, short_url, short_url_id):
         self.long_url = long_url
+        self.short_url = short_url
         self.short_url_id = short_url_id
 
 
@@ -117,11 +119,19 @@ def shorten_url():
         short_url = gen_url()
         session['url'] = short_url
         short_url_id = url_to_id(short_url)
-        url = Url(long_url, short_url_id)
+        url = Url(long_url, short_url, short_url_id)
         db.session.add(url)
         db.session.commit()
-        flash("Url is sucessfully shortened to")
+        flash("URL is sucessfully shortened to")
     return redirect(url_for('shorten'))
+
+
+@app.route('/urls', subdomain='short')
+@login_required
+def list_url():
+    urls = Url.query.all()
+    return render_template('urls.html', domain=app.config['SERVER_NAME'],
+                           urls=urls)
 
 
 if __name__ == '__main__':

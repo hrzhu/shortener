@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block body %}
+  <ul class=links>
+  {% for url in urls %}
+    <a href="{{ url.long_url }}">{{ url.long_url }}</a>
+     is shortened to<a href="http://{{ domain }}/{{ url.short_url }}">http://{{ domain }}/{{url.short_url }}</a>
+    <br>
+  {% else %}
+    <li><em>Unbelievable.  No URLs are shoterned so far</em>
+  {% endfor %}
+  </ul>
+{% endblock %}
